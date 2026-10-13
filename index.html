@@ -488,11 +488,10 @@
         attributionControl: false
       }).setView(DEFAULT_LAT_LNG, 16);
 
-      // 加入深色風格相容的 OpenStreetMap CartoDB / OSM 圖磚
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      // 改用官方標準純 OpenStreetMap (OSM) 圖磚，免 API Key 且完全無浮水印
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        subdomains: 'abcd',
-        crossOrigin: true
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       }).addTo(mapInstance);
 
       // 自訂縮放鈕置於右下角
