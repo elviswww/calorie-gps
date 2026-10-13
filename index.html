@@ -8,14 +8,14 @@
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- Leaflet CSS & JS (Free, No API Key Required) -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- Leaflet CSS & JS (完全開源、免 API 金鑰) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   
-  <!-- Google Fonts Inter & Noto Sans TC -->
+  <!-- Google Web Fonts: Inter, Chakra Petch & Noto Sans TC -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Inter:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700;800&family=Inter:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
   
   <style>
     body {
@@ -25,9 +25,9 @@
     .font-num {
       font-family: 'Chakra Petch', monospace, sans-serif;
     }
-    /* 自訂 Leaflet 地圖樣式 */
+    /* 自訂 Leaflet 地圖樣式與控制項 */
     .leaflet-container {
-      background-color: #0f172a !important;
+      background-color: #0b1120 !important;
       font-family: inherit;
     }
     .leaflet-bar a {
@@ -38,38 +38,46 @@
     .leaflet-bar a:hover {
       background-color: #334155 !important;
     }
-    /* 自訂脈衝動畫 */
+    .leaflet-control-attribution {
+      background: rgba(15, 23, 42, 0.75) !important;
+      color: #94a3b8 !important;
+      font-size: 10px !important;
+      border-radius: 6px;
+      padding: 2px 6px !important;
+      backdrop-filter: blur(4px);
+    }
+    .leaflet-control-attribution a {
+      color: #38bdf8 !important;
+    }
+    /* 玻璃擬態磨砂面板 */
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    /* 脈衝定位點波紋 */
     @keyframes pulse-ring {
       0% { transform: scale(0.8); opacity: 0.9; }
-      100% { transform: scale(2.2); opacity: 0; }
+      100% { transform: scale(2.4); opacity: 0; }
     }
-    .pulse-effect {
-      position: relative;
-    }
-    .pulse-effect::after {
+    .pulse-ring-effect::after {
       content: '';
       position: absolute;
       inset: -4px;
       border-radius: 9999px;
-      background: currentColor;
-      animation: pulse-ring 2s cubic-bezier(0.2, 0, 0, 1) infinite;
-    }
-    /* 玻璃擬態質感 */
-    .glass-panel {
-      background: rgba(15, 23, 42, 0.78);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: #10b981;
+      animation: pulse-ring 2s cubic-bezier(0.2, 0, 1) infinite;
     }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-emerald-500 selection:text-black">
 
   <!-- 頂部導航列 -->
-  <header class="glass-panel sticky top-0 z-40 px-4 py-3 border-b border-slate-800">
+  <header class="glass-panel sticky top-0 z-40 px-4 py-3 border-b border-slate-800/80">
     <div class="max-w-7xl mx-auto flex items-center justify-between">
       <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/20 flex-shrink-0">
           <svg class="w-6 h-6 text-slate-950" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/>
           </svg>
@@ -82,7 +90,7 @@
         </div>
       </div>
 
-      <!-- 狀態指標列 -->
+      <!-- 感測器運作狀態標籤 -->
       <div class="flex items-center space-x-2 text-xs">
         <div id="gpsStatusBadge" class="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-400 transition-colors">
           <span class="w-2 h-2 rounded-full bg-slate-500" id="gpsIndicatorDot"></span>
@@ -90,9 +98,9 @@
         </div>
         <div id="imuStatusBadge" class="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-400 transition-colors hidden sm:flex">
           <span class="w-2 h-2 rounded-full bg-slate-500" id="imuIndicatorDot"></span>
-          <span id="imuStatusText">IMU 未連線</span>
+          <span id="imuStatusText">IMU 待機</span>
         </div>
-        <button id="wakeLockBtn" onclick="toggleWakeLock()" title="保持螢幕常亮" class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-amber-400 transition-colors">
+        <button id="wakeLockBtn" onclick="toggleWakeLock()" title="切換螢幕長亮防止休眠" class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-amber-400 transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
           </svg>
@@ -101,13 +109,12 @@
     </div>
   </header>
 
-  <!-- 主體工作區 -->
   <main class="flex-1 max-w-7xl w-full mx-auto p-3 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5">
     
-    <!-- 左側欄位：數據儀表板、個人設定與控制列 -->
+    <!-- 左側面板：身體參數設定、卡路里儀表板與感測控制 -->
     <div class="lg:col-span-5 flex flex-col space-y-4">
       
-      <!-- 使用者身體數值卡片 (國健署 MET 計算基準) -->
+      <!-- 個人體質設定卡片 (國健署計算基準) -->
       <section class="glass-panel rounded-2xl p-4 shadow-xl border border-slate-800/80">
         <div class="flex items-center justify-between mb-3">
           <div class="flex items-center space-x-2">
@@ -143,7 +150,7 @@
 
       <!-- 核心熱量即時 HUD 卡片 -->
       <section class="glass-panel rounded-2xl p-5 shadow-2xl border border-slate-800 relative overflow-hidden">
-        <!-- 背景流光漸層裝飾 -->
+        <!-- 背景炫彩光暈 -->
         <div class="absolute -right-16 -top-16 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
         <div class="absolute -left-16 -bottom-16 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -151,11 +158,11 @@
           <div class="flex items-baseline justify-between">
             <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold flex items-center space-x-1.5">
               <span>累積燃燒卡路里</span>
-              <span id="activityStateBadge" class="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">靜止待機</span>
+              <span id="activityStateBadge" class="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">靜態停留 (暫停累計)</span>
             </span>
             <span class="text-xs font-mono text-cyan-400 flex items-center space-x-1">
               <span>MET:</span>
-              <span id="currentMetVal" class="font-bold text-sm">1.0</span>
+              <span id="currentMetVal" class="font-bold text-sm">0.0</span>
             </span>
           </div>
 
@@ -164,19 +171,19 @@
             <span class="text-xl md:text-2xl font-bold text-emerald-400">kcal</span>
           </div>
 
-          <!-- 食物熱量趣味換算 -->
+          <!-- 食物熱量趣味換算 & 車載警告提示 -->
           <div class="py-1.5 px-3 rounded-xl bg-slate-900/80 border border-slate-800/80 flex items-center justify-between text-xs text-slate-400 mb-4">
             <span class="flex items-center space-x-1.5">
-              <span id="foodEquivalentIcon">🍵</span>
-              <span id="foodEquivalentText">相當於 0 杯無糖綠茶的消耗</span>
+              <span id="foodEquivalentIcon">⏱️</span>
+              <span id="foodEquivalentText">靜止時停止計算運動卡路里</span>
             </span>
             <span id="transitWarning" class="hidden text-amber-400 font-bold flex items-center space-x-1">
               <svg class="w-3.5 h-3.5 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-              <span>車載移動中(暫停)</span>
+              <span>車載移動中 (防呆暫停)</span>
             </span>
           </div>
 
-          <!-- 即時運動四格矩陣 -->
+          <!-- 即時運動四格指標矩陣 -->
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             <div class="bg-slate-900/90 rounded-xl p-2.5 border border-slate-800">
               <div class="text-[11px] text-slate-400">運動時長</div>
@@ -207,7 +214,7 @@
         </div>
       </section>
 
-      <!-- 主要運動控制操作區 -->
+      <!-- 運動控制按鈕列 -->
       <section class="glass-panel rounded-2xl p-4 border border-slate-800 flex flex-col space-y-3">
         <div class="grid grid-cols-3 gap-2">
           <button id="startBtn" onclick="handleStartWorkout()" class="col-span-2 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold text-sm flex items-center justify-center space-x-2 shadow-lg shadow-emerald-500/25 active:scale-[0.98] transition-all">
@@ -221,7 +228,7 @@
           </button>
         </div>
 
-        <!-- 模式切換與模擬器功能列 -->
+        <!-- 檔案上傳與測試模擬功能 -->
         <div class="flex items-center justify-between pt-1 border-t border-slate-800/80 text-xs">
           <button onclick="openUploadModal()" class="text-slate-400 hover:text-cyan-400 flex items-center space-x-1 transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
@@ -234,7 +241,7 @@
         </div>
       </section>
 
-      <!-- IMU 即時感測器示波圖與步數診斷 -->
+      <!-- IMU 即時感測器示波圖 -->
       <section class="glass-panel rounded-2xl p-4 border border-slate-800 flex flex-col space-y-2">
         <div class="flex items-center justify-between text-xs">
           <span class="font-bold text-slate-300 flex items-center space-x-1.5">
@@ -244,7 +251,6 @@
           <span class="font-mono text-slate-400">總步數: <b id="totalStepsDisplay" class="text-white font-num">0</b></span>
         </div>
         
-        <!-- 加速度微型 Canvas 畫布 -->
         <div class="w-full h-20 bg-slate-900 rounded-xl overflow-hidden border border-slate-800 relative">
           <canvas id="imuCanvas" class="w-full h-full block"></canvas>
           <div class="absolute bottom-1 left-2 text-[10px] text-slate-500 font-mono">
@@ -255,29 +261,29 @@
 
     </div>
 
-    <!-- 右側欄位：Leaflet 免費 OpenStreetMap 地圖 -->
-    <div class="lg:col-span-7 flex flex-col min-h-[420px] lg:min-h-full">
+    <!-- 右側面板：純 OpenStreetMap 開放圖磚無浮水印地圖 -->
+    <div class="lg:col-span-7 flex flex-col min-h-[440px] lg:min-h-full">
       <div class="glass-panel rounded-2xl overflow-hidden border border-slate-800 flex-1 flex flex-col relative shadow-2xl">
         
-        <!-- 地圖資訊疊加工具列 -->
+        <!-- 地圖浮動頂部狀態與回中按鈕 -->
         <div class="absolute top-3 left-3 right-3 z-[1000] flex items-center justify-between pointer-events-none">
           <div class="glass-panel px-3 py-1.5 rounded-xl border border-slate-700/80 text-xs flex items-center space-x-2 pointer-events-auto shadow-lg">
             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
             <span class="font-medium text-slate-200">即時路徑追蹤</span>
             <span class="text-slate-500">|</span>
-            <span class="text-slate-400" id="gpsCoordDisplay">等待定位...</span>
+            <span class="text-slate-400 font-mono" id="gpsCoordDisplay">等待定位...</span>
           </div>
 
-          <button onclick="recenterMap()" title="回到當前位置" class="glass-panel p-2.5 rounded-xl border border-slate-700/80 text-slate-300 hover:text-white pointer-events-auto active:scale-95 transition shadow-lg">
+          <button onclick="recenterMap()" title="回到當前座標視角" class="glass-panel p-2.5 rounded-xl border border-slate-700/80 text-slate-300 hover:text-white pointer-events-auto active:scale-95 transition shadow-lg">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
           </button>
         </div>
 
-        <!-- 地圖容器 -->
-        <div id="map" class="w-full h-full min-h-[380px] z-10"></div>
+        <!-- Leaflet 地圖容器 -->
+        <div id="map" class="w-full h-full min-h-[420px] z-10"></div>
 
-        <!-- 地圖底部提示條 -->
-        <div class="px-4 py-2 bg-slate-900/90 border-t border-slate-800 text-[11px] text-slate-400 flex items-center justify-between z-20">
+        <!-- 地圖下方狀態與圖例 -->
+        <div class="px-4 py-2 bg-slate-900/95 border-t border-slate-800 text-[11px] text-slate-400 flex items-center justify-between z-20">
           <div class="flex items-center space-x-3">
             <span class="flex items-center space-x-1">
               <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
@@ -289,10 +295,10 @@
             </span>
             <span class="flex items-center space-x-1">
               <span class="w-2 h-2 rounded-full bg-rose-500 inline-block"></span>
-              <span>衝刺高強度</span>
+              <span>高速快跑</span>
             </span>
           </div>
-          <span>圖資 © OpenStreetMap 開放資料庫</span>
+          <span class="text-slate-400 font-medium">圖資: OpenStreetMap (免 API 金鑰)</span>
         </div>
       </div>
     </div>
@@ -308,18 +314,17 @@
 
       <h3 class="text-lg font-bold text-slate-100 flex items-center space-x-2 mb-2">
         <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-        <span>匯入 IMU / GPS 運動數據檔案</span>
+        <span>匯入 IMU / GPS 感測數據</span>
       </h3>
       <p class="text-xs text-slate-400 mb-4">
-        支援運動感測器匯出的 CSV 或 JSON 格式。支援包含時間戳記、加速度三軸 ($a_x, a_y, a_z$) 或經緯度 ($lat, lon$) 的資料集。
+        支援運動感測器匯出的 CSV 或 JSON 格式，可包含三軸加速度 (ax, ay, az)、速度或經緯度點位。
       </p>
 
-      <!-- 拖曳上傳區 -->
       <div id="dropZone" onclick="document.getElementById('fileInput').click()" class="border-2 border-dashed border-slate-700 hover:border-emerald-500/70 rounded-xl p-6 text-center cursor-pointer transition-colors bg-slate-900/60">
         <input type="file" id="fileInput" accept=".csv,.json" class="hidden" onchange="handleFileSelect(event)">
         <svg class="w-10 h-10 text-slate-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
         <p class="text-sm font-semibold text-slate-200">點擊或拖曳檔案至此處上傳</p>
-        <p class="text-xs text-slate-400 mt-1">.CSV 或 .JSON 檔案</p>
+        <p class="text-xs text-slate-400 mt-1">.CSV 或 .JSON 格式檔案</p>
       </div>
 
       <div class="mt-4 flex items-center justify-between">
@@ -327,7 +332,7 @@
           帶入測試示範樣本 (30分鐘快走路徑)
         </button>
         <button onclick="closeUploadModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300">
-          取消
+          關閉
         </button>
       </div>
     </div>
@@ -341,10 +346,10 @@
       </div>
 
       <h2 class="text-2xl font-black text-white tracking-tight">運動訓練達成！</h2>
-      <p class="text-xs text-slate-400 mt-1">國健署 MET 演算法結算報告</p>
+      <p class="text-xs text-slate-400 mt-1">衛福部國健署 MET 演算法結算報告</p>
 
       <div class="my-6 p-4 rounded-2xl bg-slate-900 border border-slate-800">
-        <div class="text-xs text-slate-400 mb-1">本次運動總消耗</div>
+        <div class="text-xs text-slate-400 mb-1">本次運動淨消耗</div>
         <div class="flex items-baseline justify-center space-x-1">
           <span id="summaryCalories" class="font-num text-5xl font-black text-emerald-400">0.0</span>
           <span class="text-xl font-bold text-slate-300">kcal</span>
@@ -368,17 +373,16 @@
       </div>
 
       <button onclick="closeSummaryModal()" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black text-sm active:scale-[0.98] transition shadow-lg shadow-emerald-500/25">
-        確認並完成存檔
+        確認結算
       </button>
     </div>
   </div>
 
-  <!-- 浮動訊息 Toast 容器 -->
+  <!-- Toast 提示容器 -->
   <div id="toastContainer" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-[2000] flex flex-col space-y-2 pointer-events-none w-11/12 max-w-sm"></div>
 
-  <!-- JavaScript 核心邏輯 -->
   <script>
-    // 運動追蹤狀態變數
+    // 全域運動追蹤狀態物件
     const state = {
       isTracking: false,
       isPaused: false,
@@ -390,136 +394,137 @@
       totalSteps: 0,
       currentSpeedKmh: 0,
       currentCadenceSpm: 0,
-      currentMet: 1.0,
-      isTransit: false, // 是否被大眾運輸防呆機制阻擋
+      currentMet: 0.0,
+      isTransit: false,
       
-      // GPS 座標點佇列
+      // GPS 軌跡與濾波
       gpsWatchId: null,
-      lastValidCoord: null, // {lat, lng, timestamp}
+      lastValidCoord: null,
       pathCoordinates: [],
       
-      // IMU 加速度資料滑動緩衝區
-      imuBuffer: [], // 最近 60-120 個 sample 的合成向量模長
-      stepTimestamps: [], // 用於滑動窗口推算 SPM
+      // IMU 加速度波形與步頻計算緩衝
+      imuBuffer: [],
+      stepTimestamps: [],
       lastPeakTime: 0,
       
-      // 螢幕 Wake Lock
+      // 螢幕保持長亮與定時器
       wakeLockSentinel: null,
-      
-      // 計時器
       tickerInterval: null
     };
 
-    // 衛福部國健署 MET 參數對照表 (kcal = MET * kg * hours)
-    // 參考來源：https://www.hpa.gov.tw/Obesity/SportCalculate.aspx
+    // 衛福部國健署 MET 參數定義表 (kcal = MET * kg * hr)
+    // 解決卡路里自行增加的核心：靜止停留 REST 的 MET 嚴格為 0.0（淨運動熱量累計，靜止不動不增長）
     const HPA_MET_TABLE = {
-      REST: 1.2,           // 靜態休息
+      REST: 0.0,           // 靜止/停留 (停止運動累計)
       SLOW_WALK: 3.5,      // 慢走 (約 4 km/h)
       BRISK_WALK: 5.5,     // 快走、健走 (約 6 km/h)
       JOGGING: 8.2,        // 慢跑 (約 8 km/h)
-      RUNNING_MED: 11.5,   // 跑步 (約 12 km/h)
+      RUNNING_MED: 11.5,   // 跑 (約 12 km/h)
       RUNNING_FAST: 16.0,  // 快跑 (約 16 km/h)
-      TRANSIT: 0.0         // 搭乘車輛/捷運 (防呆不列入運動)
+      TRANSIT: 0.0         // 大眾運輸/車輛防呆 (不計入卡路里)
     };
 
     /**
-     * 根據國健署 MET 核心公式與感測器融合判定當前 MET 值
-     * @param {number} speed - 時速 (km/h)
-     * @param {number} spm - 步頻 (Steps Per Minute)
-     * @returns {{met: number, label: string, isTransit: boolean}}
+     * 衛福部國健署 MET 判定與防呆仲裁核心
+     * @param {number} speed - 當前時速 (km/h)
+     * @param {number} spm - 當前步頻 (Steps Per Minute)
      */
     function evaluateMetState(speed, spm) {
-      // 1. 車載防呆仲裁：速度大於 16 km/h 且步頻極低 (SPM < 50)，判定為機車/公車/捷運
+      // 1. 車輛移動防呆仲裁：速度 > 16 km/h 且步頻 SPM < 50，判定為搭車/捷運
       if (speed > 16 && spm < 50) {
-        return { met: HPA_MET_TABLE.TRANSIT, label: '搭乘交通工具 (防呆暫停)', isTransit: true };
+        return { met: HPA_MET_TABLE.TRANSIT, label: '搭乘交通工具 (防呆暫停)', isTransit: true, isStationary: false };
       }
 
-      // 2. 靜態待機
-      if (speed < 0.8 && spm < 30) {
-        return { met: HPA_MET_TABLE.REST, label: '原地休息/停留', isTransit: false };
+      // 2. 原地靜止防呆：速度 < 1.0 km/h 且步頻 < 35，判定為原地停留
+      // 確保停止狀態下卡路里不會自行增加 (MET 嚴格為 0.0)
+      if (speed < 1.0 && spm < 35) {
+        return { met: HPA_MET_TABLE.REST, label: '原地靜止 (暫停計卡)', isTransit: false, isStationary: true };
       }
 
-      // 3. 慢走 (4 km/h 或步頻 60~100)
+      // 3. 慢走 (時速約 4 km/h，步頻 60~105)
       if (speed < 5.0 && spm <= 105) {
-        return { met: HPA_MET_TABLE.SLOW_WALK, label: '休閒慢走 (4km/h)', isTransit: false };
+        return { met: HPA_MET_TABLE.SLOW_WALK, label: '休閒慢走 (4km/h)', isTransit: false, isStationary: false };
       }
 
-      // 4. 快走 / 健走 (5.0~7.2 km/h 或步頻 105~135)
+      // 4. 快走、健走 (時速約 6 km/h，步頻 105~135)
       if (speed < 7.2 && spm <= 135) {
-        return { met: HPA_MET_TABLE.BRISK_WALK, label: '快走健走 (6km/h)', isTransit: false };
+        return { met: HPA_MET_TABLE.BRISK_WALK, label: '快走健走 (6km/h)', isTransit: false, isStationary: false };
       }
 
-      // 5. 慢跑 (7.2~10.5 km/h 或步頻 135~165)
+      // 5. 節奏慢跑 (時速約 8 km/h，步頻 135~165)
       if (speed < 10.5 || (spm > 135 && spm <= 165)) {
-        return { met: HPA_MET_TABLE.JOGGING, label: '節奏慢跑 (8km/h)', isTransit: false };
+        return { met: HPA_MET_TABLE.JOGGING, label: '節奏慢跑 (8km/h)', isTransit: false, isStationary: false };
       }
 
-      // 6. 跑步 (10.5~14 km/h 或步頻 > 165)
+      // 6. 跑步 (時速約 12 km/h)
       if (speed < 14.0) {
-        return { met: HPA_MET_TABLE.RUNNING_MED, label: '跑步運動 (12km/h)', isTransit: false };
+        return { met: HPA_MET_TABLE.RUNNING_MED, label: '跑步運動 (12km/h)', isTransit: false, isStationary: false };
       }
 
-      // 7. 快跑衝刺 (> 14 km/h 且步頻足夠)
-      return { met: HPA_MET_TABLE.RUNNING_FAST, label: '高速快跑 (16km/h)', isTransit: false };
+      // 7. 高速快跑衝刺 (時速約 16 km/h)
+      return { met: HPA_MET_TABLE.RUNNING_FAST, label: '高速快跑 (16km/h)', isTransit: false, isStationary: false };
     }
 
-    /**
-     * 計算在時間區間 dt 內燃燒的卡路里 (國健署公式)
-     * @param {number} met 
-     * @param {number} weightKg 
-     * @param {number} durationHours 
-     */
     function calculateHpaCalories(met, weightKg, durationHours) {
       if (met <= 0) return 0;
       return met * weightKg * durationHours;
     }
 
-    // 初始化 Leaflet 地圖 (使用免金鑰 OSM 開放圖磚)
+    // 地圖變數
     let mapInstance = null;
     let userMarker = null;
     let trackPolyline = null;
-    const DEFAULT_LAT_LNG = [22.653, 120.285]; // 預設高雄/台灣坐標視角
+    const DEFAULT_COORDS = [22.653, 120.285]; // 預設視角
 
     function initMap() {
       if (mapInstance) return;
       
+      const mapContainer = document.getElementById('map');
+      if (!mapContainer) return;
+
       mapInstance = L.map('map', {
         zoomControl: false,
-        attributionControl: false
-      }).setView(DEFAULT_LAT_LNG, 16);
+        attributionControl: true
+      }).setView(DEFAULT_COORDS, 16);
 
-      // 改用官方標準純 OpenStreetMap (OSM) 圖磚，免 API Key 且完全無浮水印
+      // 純官方 OpenStreetMap 圖磚 (完全免 API 金鑰、無 CartoDB 浮水印)
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        subdomains: ['a', 'b', 'c'],
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
       }).addTo(mapInstance);
 
-      // 自訂縮放鈕置於右下角
+      // 控制縮放鈕移至右下
       L.control.zoom({ position: 'bottomright' }).addTo(mapInstance);
 
-      // 運動軌跡多段線
+      // 即時軌跡線段
       trackPolyline = L.polyline([], {
         color: '#10b981',
-        weight: 6,
-        opacity: 0.9,
-        lineCap: 'round',
-        lineJoin: 'round'
+        weight: 5,
+        opacity: 0.85,
+        smoothFactor: 1
       }).addTo(mapInstance);
 
-      // 當前位置脈衝標記
+      // 脈衝定位圖標
+      const pulseHtml = `
+        <div class="relative flex items-center justify-center">
+          <span class="animate-ping absolute inline-flex h-6 w-6 rounded-full bg-emerald-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-white shadow-lg"></span>
+        </div>
+      `;
+
       const pulseIcon = L.divIcon({
-        className: 'custom-gps-pin',
-        html: `<div class="w-4 h-4 bg-emerald-400 rounded-full border-2 border-white shadow-lg pulse-effect text-emerald-400"></div>`,
-        iconSize: [16, 16],
-        iconAnchor: [8, 8]
+        className: 'custom-pulse-marker',
+        html: pulseHtml,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
       });
 
-      userMarker = L.marker(DEFAULT_LAT_LNG, { icon: pulseIcon }).addTo(mapInstance);
-      
-      // 監聽地圖尺寸動態重算
-      window.addEventListener('resize', () => {
+      userMarker = L.marker(DEFAULT_COORDS, { icon: pulseIcon }).addTo(mapInstance);
+
+      setTimeout(() => {
         if (mapInstance) mapInstance.invalidateSize();
-      });
+      }, 250);
     }
 
     function recenterMap() {
@@ -527,24 +532,23 @@
       if (state.lastValidCoord) {
         mapInstance.setView([state.lastValidCoord.lat, state.lastValidCoord.lng], 17);
       } else {
-        showToast('尚未取得精確 GPS 座標');
+        showToast('尚未取得精確 GPS 定位座標');
       }
     }
 
-    // 計算兩個經緯度之間的真實地面距離 (Haversine 公式，單位公里)
     function computeHaversineDistance(lat1, lon1, lat2, lon2) {
       const R = 6371; // 地球半徑 (km)
       const dLat = (lat2 - lat1) * Math.PI / 180;
       const dLon = (lon2 - lon1) * Math.PI / 180;
       const a = 
-        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
         Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-        Math.sin(dLon/2) * Math.sin(dLon/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
       return R * c;
     }
 
-    // 初始化 IMU 加速度波形畫布
+    // IMU 畫布設置
     const canvas = document.getElementById('imuCanvas');
     const ctx = canvas ? canvas.getContext('2d') : null;
     let canvasWidth = 300;
@@ -553,20 +557,20 @@
     function resizeCanvas() {
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width;
-      canvas.height = rect.height;
-      canvasWidth = rect.width;
-      canvasHeight = rect.height;
+      if (rect.width > 0) {
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+        canvasWidth = rect.width;
+        canvasHeight = rect.height;
+      }
     }
     window.addEventListener('resize', resizeCanvas);
-    setTimeout(resizeCanvas, 200);
 
-    // 繪製 IMU 即時波形
     function drawImuWaveform() {
       if (!ctx || !canvas) return;
       ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
-      // 格線
+      // 中心參考基準線
       ctx.strokeStyle = '#1e293b';
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -582,9 +586,9 @@
 
       const step = canvasWidth / (state.imuBuffer.length - 1);
       for (let i = 0; i < state.imuBuffer.length; i++) {
-        const val = state.imuBuffer[i]; // 模長通常在 0 ~ 25 m/s^2 震盪
-        // 將波幅正規化至畫布中線
-        const y = (canvasHeight / 2) - ((val - 9.8) * (canvasHeight / 20));
+        const val = state.imuBuffer[i];
+        // 以 9.8 m/s^2 為重力中心
+        const y = (canvasHeight / 2) - ((val - 9.8) * (canvasHeight / 22));
         const clampedY = Math.max(4, Math.min(canvasHeight - 4, y));
         
         if (i === 0) ctx.moveTo(0, clampedY);
@@ -594,12 +598,9 @@
     }
 
     /**
-     * IMU 高頻事件監聽器處理核心
-     * 包含向量合成模長 SVM = sqrt(ax^2 + ay^2 + az^2)
-     * 以及自適應波峰過濾（Dynamic Threshold Peak Detection）計算步頻
+     * IMU 即時感測器監聽 (三軸合成加速度模長 SVM + 波峰計步)
      */
     function handleDeviceMotion(event) {
-      // 支援含重力與不含重力加速度來源
       const acc = event.accelerationIncludingGravity || event.acceleration;
       if (!acc || acc.x === null) return;
 
@@ -607,14 +608,14 @@
       const ay = acc.y || 0;
       const az = acc.z || 0;
 
-      // 向量模長 (SVM)
+      // SVM 合成向量模長 = sqrt(ax^2 + ay^2 + az^2)
       const svm = Math.sqrt(ax * ax + ay * ay + az * az);
       
-      // 更新即時除錯數值
       const rawEl = document.getElementById('accRawDisplay');
-      if (rawEl) rawEl.innerText = `X: ${ax.toFixed(1)}, Y: ${ay.toFixed(1)}, Z: ${az.toFixed(1)}`;
+      if (rawEl) {
+        rawEl.innerText = `X: ${ax.toFixed(1)}, Y: ${ay.toFixed(1)}, Z: ${az.toFixed(1)}`;
+      }
 
-      // 維護緩衝區以供波形圖與特徵分析
       state.imuBuffer.push(svm);
       if (state.imuBuffer.length > 70) state.imuBuffer.shift();
 
@@ -623,21 +624,20 @@
         return;
       }
 
-      // 波峰偵測：步態震盪閾值 (高於 11.8 m/s^2 視為踏步波峰，且防止 250ms 內連續重複計步)
+      // 波峰計步演算法：大於 11.8 m/s^2 判定為踏步，設定最小間隔 240ms 防止重覆誤判
       const now = performance.now();
-      const PEAK_THRESHOLD = 11.9;
-      const MIN_STEP_INTERVAL_MS = 240; // 最高極限步頻 250 SPM
+      const PEAK_THRESHOLD = 11.8;
+      const MIN_STEP_INTERVAL = 240;
 
-      if (svm > PEAK_THRESHOLD && (now - state.lastPeakTime > MIN_STEP_INTERVAL_MS)) {
+      if (svm > PEAK_THRESHOLD && (now - state.lastPeakTime > MIN_STEP_INTERVAL)) {
         state.lastPeakTime = now;
         state.totalSteps++;
         state.stepTimestamps.push(now);
 
-        // 清理 5 秒前的過期步數時間戳記
+        // 保留近 5 秒內的步頻採樣窗口
         const cutoff = now - 5000;
         state.stepTimestamps = state.stepTimestamps.filter(t => t > cutoff);
 
-        // 換算近 5 秒內的即時每分鐘步頻 (SPM)
         if (state.stepTimestamps.length >= 2) {
           const windowSpanSec = (now - state.stepTimestamps[0]) / 1000;
           if (windowSpanSec > 0.5) {
@@ -650,25 +650,21 @@
     }
 
     /**
-     * GPS 即時定位成功回呼
+     * GPS 即時定位成功回呼 (具備死區漂移濾波與精度閾值)
      */
     function handleGpsSuccess(position) {
       const { latitude, longitude, accuracy, speed } = position.coords;
       const now = Date.now();
 
-      // 更新 GPS 徽章與座標指示
       updateGpsBadge(true, `精度 ±${Math.round(accuracy)}m`);
       const coordEl = document.getElementById('gpsCoordDisplay');
       if (coordEl) coordEl.innerText = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
 
-      // 精度防飄移過濾：若 GPS 誤差大於 28 公尺則捨棄
-      if (accuracy > 28) {
-        return;
-      }
+      // 精度低於 35 公尺時捨棄該點，防止衛星跳耀
+      if (accuracy > 35) return;
 
       const currentLatLng = [latitude, longitude];
 
-      // 移動地圖視角至最新位置
       if (userMarker) userMarker.setLatLng(currentLatLng);
       
       if (!state.isTracking) {
@@ -679,7 +675,6 @@
         return;
       }
 
-      // 正在記錄運動軌跡
       if (state.lastValidCoord) {
         const deltaKm = computeHaversineDistance(
           state.lastValidCoord.lat, state.lastValidCoord.lng,
@@ -687,24 +682,27 @@
         );
         const timeDiffHours = (now - state.lastValidCoord.timestamp) / (1000 * 3600);
 
-        // 速度計算（優先使用裝置原生 speed，否則由 delta/dt 計算）
-        let calculatedSpeedKmh = 0;
+        let calculatedSpeed = 0;
         if (speed !== null && speed >= 0) {
-          calculatedSpeedKmh = speed * 3.6; // m/s -> km/h
+          calculatedSpeed = speed * 3.6;
         } else if (timeDiffHours > 0) {
-          calculatedSpeedKmh = deltaKm / timeDiffHours;
+          calculatedSpeed = deltaKm / timeDiffHours;
         }
 
-        // 過濾瞬間超光速飄移 (人體步行跑步不可能超過 40 km/h)
-        if (calculatedSpeedKmh < 45 && deltaKm > 0.001) {
+        // GPS 死區過濾 (Deadband)：若單次位移小於 3.5 公尺且步頻小於 30，判定為原地漂移雜訊
+        if (deltaKm < 0.0035 && state.currentCadenceSpm < 30) {
+          state.currentSpeedKmh = 0;
+          return;
+        }
+
+        if (calculatedSpeed < 45 && deltaKm > 0.001) {
           state.totalDistanceKm += deltaKm;
-          state.currentSpeedKmh = calculatedSpeedKmh;
+          state.currentSpeedKmh = calculatedSpeed;
           
-          // 更新地圖路徑線
           state.pathCoordinates.push(currentLatLng);
           trackPolyline.setLatLngs(state.pathCoordinates);
           
-          // 動態隨軌跡調整色調
+          // 依時速動態變換軌跡顏色
           if (state.currentSpeedKmh > 10) {
             trackPolyline.setStyle({ color: '#f43f5e' });
           } else if (state.currentSpeedKmh > 5) {
@@ -723,27 +721,27 @@
     }
 
     function handleGpsError(err) {
-      console.warn('GPS 定位失敗/遭拒絕:', err.message);
+      console.warn('GPS 訊號待機或離線:', err.message);
       updateGpsBadge(false, '無 GPS 訊號');
-      showToast('無法取得 GPS 定位，可使用「啟動測試模擬」體驗');
     }
 
     function updateGpsBadge(active, text) {
       const badge = document.getElementById('gpsStatusBadge');
       const dot = document.getElementById('gpsIndicatorDot');
       const label = document.getElementById('gpsStatusText');
+      if (!badge) return;
       if (active) {
         badge.className = 'flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-800 text-emerald-400';
         dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
         label.innerText = text || 'GPS 正常';
       } else {
         badge.className = 'flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-400';
-        dot.className = 'w-2 h-2 rounded-full bg-rose-500';
-        label.innerText = text || 'GPS 離線';
+        dot.className = 'w-2 h-2 rounded-full bg-slate-500';
+        label.innerText = text || 'GPS 待機';
       }
     }
 
-    // IMU 檔案上傳與解析處理器
+    // 解析使用者上傳的 IMU/GPS 檔案
     function handleFileSelect(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -757,7 +755,6 @@
           if (file.name.endsWith('.json')) {
             parsedData = JSON.parse(content);
           } else {
-            // 解析 CSV (預期首行有 headers，例如: timestamp,ax,ay,az,lat,lng,speed)
             const lines = content.split('\n').filter(l => l.trim() !== '');
             const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
             
@@ -775,7 +772,7 @@
 
           closeUploadModal();
           runImportedDatasetPlayback(parsedData);
-          showToast(`成功解析 ${parsedData.length} 筆 IMU / GPS 感測紀錄！`);
+          showToast(`成功解析 ${parsedData.length} 筆感測資料！`);
 
         } catch (err) {
           showToast('檔案格式解析錯誤: ' + err.message);
@@ -784,12 +781,11 @@
       reader.readAsText(file);
     }
 
-    // 載入示範用健走資料集
     function loadSampleIMUData() {
       closeUploadModal();
       const mockPoints = generateSampleWalkingRoute();
       runImportedDatasetPlayback(mockPoints);
-      showToast('已載入 30 分鐘公園健走示範數據並完成試算！');
+      showToast('已載入 30 分鐘公園快走示範數據！');
     }
 
     function generateSampleWalkingRoute() {
@@ -801,8 +797,8 @@
           timestamp: i * 1000,
           lat: baseLat + (i * 0.00015),
           lng: baseLng + (Math.sin(i * 0.2) * 0.0002),
-          speed: 5.8 + (Math.random() * 0.8), // 健走速度
-          cadence: 118 + Math.floor(Math.random() * 8), // 健走步頻
+          speed: 5.8 + (Math.random() * 0.8),
+          cadence: 118 + Math.floor(Math.random() * 8),
           ax: (Math.random() - 0.5) * 4,
           ay: 9.8 + (Math.sin(i) * 3),
           az: (Math.random() - 0.5) * 3
@@ -811,7 +807,6 @@
       return data;
     }
 
-    // 回放並結算匯入的數據集
     function runImportedDatasetPlayback(dataset) {
       handleStopWorkout();
       
@@ -840,12 +835,10 @@
         }
 
         const metEval = evaluateMetState(speed, spm);
-        // 每筆紀錄假設間隔 1 秒
         totalKcal += calculateHpaCalories(metEval.met, weight, 1 / 3600);
         totalSteps += Math.round(spm / 60);
       }
 
-      // 更新地圖與介面顯示
       if (coords.length > 0 && mapInstance) {
         trackPolyline.setLatLngs(coords);
         mapInstance.fitBounds(trackPolyline.getBounds());
@@ -860,7 +853,7 @@
       showSummaryDialog();
     }
 
-    // 模擬器演算法 (電腦端無感測器時使用)
+    // 電腦端測試模擬器
     let simInterval = null;
     function toggleSimulator() {
       if (state.isSimulating) {
@@ -883,7 +876,6 @@
           if (!state.isTracking) return;
           simStep++;
 
-          // 模擬正常慢跑波形與速度
           const simulatedSpm = 148 + Math.floor(Math.sin(simStep * 0.1) * 12);
           const simulatedSpeedKmh = 8.5 + (Math.cos(simStep * 0.1) * 0.8);
 
@@ -902,7 +894,7 @@
             coords: {
               latitude: simLat,
               longitude: simLng,
-              accuracy: 8,
+              accuracy: 6,
               speed: simulatedSpeedKmh / 3.6
             }
           });
@@ -910,26 +902,24 @@
       }
     }
 
-    // 開始追蹤運動
+    // 開始運動追蹤
     async function handleStartWorkout(isSim = false) {
       if (state.isTracking) return;
 
-      // 檢查 iOS Safari IMU 權限宣告
+      // iOS Safari IMU 權限要求
       if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
         try {
           const permissionState = await DeviceMotionEvent.requestPermission();
           if (permissionState !== 'granted') {
-            showToast('未取得 IMU 感測器授權，無法啟用即時步頻');
+            showToast('未取得 IMU 感測器授權，步頻功能受限');
           }
         } catch (e) {
-          console.warn('iOS Permission request error:', e);
+          console.warn('iOS Permission request:', e);
         }
       }
 
-      // 啟動螢幕常亮防止手機鎖定中斷
       requestWakeLock();
 
-      // 重設狀態
       state.isTracking = true;
       state.startTime = Date.now();
       state.elapsedSeconds = 0;
@@ -937,9 +927,8 @@
       state.totalDistanceKm = 0;
       state.totalSteps = 0;
       state.pathCoordinates = [];
-      trackPolyline.setLatLngs([]);
+      if (trackPolyline) trackPolyline.setLatLngs([]);
 
-      // 註冊真實硬體感測器
       if (!isSim) {
         if (window.DeviceMotionEvent) {
           window.addEventListener('devicemotion', handleDeviceMotion, { passive: true });
@@ -957,17 +946,15 @@
         }
       }
 
-      // 啟動每秒 1 次的主控引擎排程 (1Hz 降頻運算避開主執行緒負擔)
       state.tickerInterval = setInterval(engineTick, 1000);
 
-      // 更新 UI 狀態
       document.getElementById('startBtn').classList.add('hidden');
       document.getElementById('stopBtn').disabled = false;
       document.getElementById('stopBtn').classList.remove('opacity-40');
-      showToast('運動追蹤已啟動！GPS 與 IMU 開始運算');
+      showToast('運動追蹤已啟動！');
     }
 
-    // 停止結束運動
+    // 結束運動
     function handleStopWorkout() {
       if (!state.isTracking && !state.isSimulating) return;
 
@@ -976,7 +963,6 @@
       if (simInterval) clearInterval(simInterval);
       state.isSimulating = false;
 
-      // 釋放感測器與定位
       window.removeEventListener('devicemotion', handleDeviceMotion);
       if (state.gpsWatchId !== null) {
         navigator.geolocation.clearWatch(state.gpsWatchId);
@@ -984,35 +970,31 @@
       }
       releaseWakeLock();
 
-      // 恢復介面按鈕
       document.getElementById('startBtn').classList.remove('hidden');
       document.getElementById('stopBtn').disabled = true;
+      document.getElementById('stopBtn').classList.add('opacity-40');
       document.getElementById('simulatorBtnText').innerText = '啟動測試模擬';
       updateImuBadge(false, 'IMU 待機');
 
       showSummaryDialog();
     }
 
-    // 1Hz 核心運動計時器與熱量積分
+    // 1Hz 核心計時與卡路里積分計算
     function engineTick() {
       state.elapsedSeconds++;
 
-      // 取得使用者設定體重 (kg)
       const weight = parseFloat(document.getElementById('userWeight').value) || 54;
-
-      // 評估當前 MET 與狀態
       const metResult = evaluateMetState(state.currentSpeedKmh, state.currentCadenceSpm);
       state.currentMet = metResult.met;
       state.isTransit = metResult.isTransit;
 
-      // 國健署公式：每秒累計卡路里
-      // dt = 1秒 = 1/3600 小時
-      if (!state.isTransit) {
+      // 嚴格判定：非車載、非靜止停留且 MET > 0 時，才累計有效淨運動熱量
+      if (!state.isTransit && !metResult.isStationary && state.currentMet > 0) {
         const deltaKcal = calculateHpaCalories(state.currentMet, weight, 1 / 3600);
         state.totalCalories += deltaKcal;
       }
 
-      // 若一段時間無步頻信號，步頻逐漸自然衰減至 0
+      // 步頻超時平滑衰減 (超過 3 秒無步峰歸零)
       if (performance.now() - state.lastPeakTime > 3000) {
         state.currentCadenceSpm = 0;
       }
@@ -1029,13 +1011,11 @@
       document.getElementById('totalStepsDisplay').innerText = state.totalSteps;
       document.getElementById('currentMetVal').innerText = state.currentMet.toFixed(1);
 
-      // 時長格式化 00:00:00
       const h = Math.floor(state.elapsedSeconds / 3600).toString().padStart(2, '0');
       const m = Math.floor((state.elapsedSeconds % 3600) / 60).toString().padStart(2, '0');
       const s = (state.elapsedSeconds % 60).toString().padStart(2, '0');
       document.getElementById('durationDisplay').innerText = `${h}:${m}:${s}`;
 
-      // 狀態標籤與食物換算
       if (metResult) {
         const stateBadge = document.getElementById('activityStateBadge');
         stateBadge.innerText = metResult.label;
@@ -1051,7 +1031,10 @@
       // 食物趣味熱量換算
       const foodIcon = document.getElementById('foodEquivalentIcon');
       const foodText = document.getElementById('foodEquivalentText');
-      if (state.totalCalories < 100) {
+      if (state.totalCalories < 1) {
+        foodIcon.innerText = '⏱️';
+        foodText.innerText = '原地停留或等待中 (暫停累計)';
+      } else if (state.totalCalories < 80) {
         foodIcon.innerText = '☕';
         foodText.innerText = `相當於燃燒 ${(state.totalCalories / 30).toFixed(1)} 杯黑咖啡`;
       } else if (state.totalCalories < 280) {
@@ -1062,7 +1045,7 @@
         foodText.innerText = `相當於燃燒 ${(state.totalCalories / 280).toFixed(1)} 碗香Q白飯`;
       } else {
         foodIcon.innerText = '🧋';
-        foodText.innerText = `超狂！已消耗 ${(state.totalCalories / 550).toFixed(1)} 杯珍珠奶茶！`;
+        foodText.innerText = `太強了！已消耗 ${(state.totalCalories / 550).toFixed(1)} 杯珍珠奶茶！`;
       }
     }
 
@@ -1082,14 +1065,14 @@
       }
     }
 
-    // 螢幕保持喚醒 WakeLock
+    // Screen Wake Lock API 螢幕常亮控制
     async function requestWakeLock() {
       if ('wakeLock' in navigator) {
         try {
           state.wakeLockSentinel = await navigator.wakeLock.request('screen');
           document.getElementById('wakeLockBtn').classList.add('text-amber-400', 'border-amber-500/50');
         } catch (err) {
-          console.warn('Wake Lock failed:', err);
+          console.warn('Wake Lock 授權未通過:', err);
         }
       }
     }
@@ -1108,7 +1091,7 @@
         showToast('已取消螢幕常亮');
       } else {
         requestWakeLock();
-        showToast('已開啟螢幕常亮保護');
+        showToast('已開啟螢幕常亮');
       }
     }
 
@@ -1161,12 +1144,12 @@
       }, 3500);
     }
 
-    // 頁面初始化
+    // 網頁載入完成初始化
     window.addEventListener('DOMContentLoaded', () => {
       initMap();
       resizeCanvas();
 
-      // 檢查 GPS 基本能力
+      // 初始化當前 GPS 定位
       if ('geolocation' in navigator) {
         navigator.geolocation.getCurrentPosition(
           (pos) => handleGpsSuccess(pos),
